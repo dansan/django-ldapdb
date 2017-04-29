@@ -62,6 +62,13 @@ class DatabaseValidation(BaseDatabaseValidation):
     pass
 
 
+# monkey patch for compatibility with python-ldap < 2.40.20
+if not hasattr(ldap, 'AUTH_METHOD_NOT_SUPPORTED'):
+    class AUTH_METHOD_NOT_SUPPORTED(ldap.LDAPError):
+        def __init__(self, *args, **kwargs):
+            pass
+    ldap.AUTH_METHOD_NOT_SUPPORTED = AUTH_METHOD_NOT_SUPPORTED
+
 # detect pyldap
 HAS_PYLDAP = 'bytes_mode' in ldap.initialize.func_doc
 
