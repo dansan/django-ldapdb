@@ -62,6 +62,10 @@ class DatabaseValidation(BaseDatabaseValidation):
     pass
 
 
+# detect pyldap
+HAS_PYLDAP = 'bytes_mode' in ldap.initialize.func_doc
+
+
 class LdapDatabase(object):
     # Base class for all exceptions
     Error = ldap.LDAPError
@@ -225,7 +229,12 @@ class DatabaseWrapper(BaseDatabaseWrapper):
 
     def get_new_connection(self, conn_params):
         """Build a connection from its parameters."""
-        connection = ldap.initialize(conn_params['uri'], bytes_mode=False)
+
+        # compatibility for python-ldap: bytes_mode=False is only supported by pyldap
+        kwargs = dict(uri=conn_params['uri'])
+        if HAS_PYLDAP:
+            kwargs['bytes_mode'] = False
+        connection = ldap.initialize(**kwargs)
 
         options = conn_params['options']
         for opt, value in options.items():
@@ -291,6 +300,10 @@ class DatabaseWrapper(BaseDatabaseWrapper):
 
         # Fetch results
         page = 0
+
+        # compatibility for python-ldap
+        if not HAS_PYLDAP:
+            attrlist = [str(x) for x in attrlist]
 
         while True:
             msgid = cursor.connection.search_ext(
